@@ -1,6 +1,5 @@
 import type { PriceRow, ChartDataPoint, ChartSeries } from "@/types/price-data";
 import type { PriceType } from "@/types/price-data";
-import { REGION_CODES } from "@/lib/data/regions";
 
 // 차트 라인 색상 팔레트
 const COLORS = [
@@ -20,21 +19,30 @@ const COLORS = [
 
 export function buildChartData(
   data: PriceRow[],
-  regions: string[],
+  _regions: string[],
   priceType: "매매" | "전세" | "both"
 ): { chartData: ChartDataPoint[]; series: ChartSeries[] } {
-  const series: ChartSeries[] = [];
   const priceTypes: PriceType[] = priceType === "both" ? ["매매", "전세"] : [priceType];
 
+  // 데이터에서 등장 순서대로 고유 지역명 추출
+  const regionOrder: string[] = [];
+  const seen = new Set<string>();
+  for (const row of data) {
+    if (!seen.has(row.regionName)) {
+      seen.add(row.regionName);
+      regionOrder.push(row.regionName);
+    }
+  }
+
   // 시리즈 키 생성
+  const series: ChartSeries[] = [];
   let colorIndex = 0;
-  for (const region of regions) {
+  for (const region of regionOrder) {
     const color = COLORS[colorIndex % COLORS.length];
     colorIndex++;
     for (const pt of priceTypes) {
-      const key = `${region}__${pt}`;
       series.push({
-        key,
+        key: `${region}__${pt}`,
         regionName: region,
         priceType: pt,
         color,
@@ -43,24 +51,15 @@ export function buildChartData(
     }
   }
 
-  // regionCode → fullName 역매핑 (API CLS_NM은 짧은 이름이므로 코드 기준 매칭)
-  const codeToName = new Map<string, string>();
-  for (const region of regions) {
-    const code = REGION_CODES[region];
-    if (code) codeToName.set(code, region);
-  }
-
   // 날짜별로 집계
   const dateMap = new Map<string, ChartDataPoint>();
   for (const row of data) {
     if (priceType !== "both" && row.priceType !== priceType) continue;
-    const fullName = codeToName.get(row.regionCode);
-    if (!fullName) continue;
 
     if (!dateMap.has(row.date)) {
       dateMap.set(row.date, { date: row.date });
     }
-    const key = `${fullName}__${row.priceType}`;
+    const key = `${row.regionName}__${row.priceType}`;
     dateMap.get(row.date)![key] = row.value;
   }
 

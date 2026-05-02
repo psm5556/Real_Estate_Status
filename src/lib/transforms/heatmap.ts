@@ -1,26 +1,29 @@
 import type { PriceRow, HeatmapMatrix } from "@/types/price-data";
-import { REGION_CODES } from "@/lib/data/regions";
 
 export type HeatmapMode = "cumulative" | "wow";
 
 export function buildHeatmapMatrix(
   data: PriceRow[],
-  regions: string[],
+  _regions: string[],
   mode: HeatmapMode
 ): HeatmapMatrix {
   if (data.length === 0) return { regions: [], dates: [], values: [] };
 
-  // 날짜 목록 (정렬된 고유값)
+  // 날짜·지역 목록을 데이터에서 직접 추출
   const dateSet = new Set<string>();
-  for (const row of data) dateSet.add(row.date);
+  const regionSet = new Set<string>();
+  for (const row of data) {
+    dateSet.add(row.date);
+    regionSet.add(row.regionName);
+  }
   const dates = Array.from(dateSet).sort();
+  const regions = Array.from(regionSet);
 
   const result: number[][] = [];
 
   for (const regionName of regions) {
-    const regionCode = REGION_CODES[regionName];
     const regionData = data
-      .filter((r) => regionCode ? r.regionCode === regionCode : r.regionName === regionName)
+      .filter((r) => r.regionName === regionName)
       .sort((a, b) => a.date.localeCompare(b.date));
 
     if (regionData.length === 0) {
