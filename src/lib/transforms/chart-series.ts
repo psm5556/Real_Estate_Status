@@ -1,5 +1,6 @@
 import type { PriceRow, ChartDataPoint, ChartSeries } from "@/types/price-data";
 import type { PriceType } from "@/types/price-data";
+import { REGION_CODES } from "@/lib/data/regions";
 
 // 차트 라인 색상 팔레트
 const COLORS = [
@@ -42,16 +43,24 @@ export function buildChartData(
     }
   }
 
+  // regionCode → fullName 역매핑 (API CLS_NM은 짧은 이름이므로 코드 기준 매칭)
+  const codeToName = new Map<string, string>();
+  for (const region of regions) {
+    const code = REGION_CODES[region];
+    if (code) codeToName.set(code, region);
+  }
+
   // 날짜별로 집계
   const dateMap = new Map<string, ChartDataPoint>();
   for (const row of data) {
     if (priceType !== "both" && row.priceType !== priceType) continue;
-    if (!regions.includes(row.regionName)) continue;
+    const fullName = codeToName.get(row.regionCode);
+    if (!fullName) continue;
 
     if (!dateMap.has(row.date)) {
       dateMap.set(row.date, { date: row.date });
     }
-    const key = `${row.regionName}__${row.priceType}`;
+    const key = `${fullName}__${row.priceType}`;
     dateMap.get(row.date)![key] = row.value;
   }
 

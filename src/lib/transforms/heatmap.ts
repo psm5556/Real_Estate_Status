@@ -1,4 +1,5 @@
 import type { PriceRow, HeatmapMatrix } from "@/types/price-data";
+import { REGION_CODES } from "@/lib/data/regions";
 
 export type HeatmapMode = "cumulative" | "wow";
 
@@ -17,8 +18,9 @@ export function buildHeatmapMatrix(
   const result: number[][] = [];
 
   for (const regionName of regions) {
+    const regionCode = REGION_CODES[regionName];
     const regionData = data
-      .filter((r) => r.regionName === regionName)
+      .filter((r) => regionCode ? r.regionCode === regionCode : r.regionName === regionName)
       .sort((a, b) => a.date.localeCompare(b.date));
 
     if (regionData.length === 0) {
