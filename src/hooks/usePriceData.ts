@@ -42,11 +42,15 @@ export function usePriceData() {
         priceType === "both" ? ["매매", "전세"] : [priceType];
 
       // 병렬 팬아웃: N지역 × M가격유형
+      // API가 반환하는 CLS_NM은 짧은 이름(예: "강남지역")이므로
+      // 필터에서 사용한 전체 이름(예: "서울>강남지역")으로 덮어씀
       const promises = regions.flatMap((regionName) => {
         const regionCode = REGION_CODES[regionName];
         if (!regionCode) return [];
         return priceTypes.map((pt) =>
-          fetchOne(pt, startWeek, endWeek, regionCode).catch(() => [] as PriceRow[])
+          fetchOne(pt, startWeek, endWeek, regionCode)
+            .then((rows) => rows.map((row) => ({ ...row, regionName })))
+            .catch(() => [] as PriceRow[])
         );
       });
 
