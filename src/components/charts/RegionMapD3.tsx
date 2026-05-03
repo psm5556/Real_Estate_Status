@@ -128,7 +128,7 @@ export function RegionMapD3({ data, date, priceType }: RegionMapD3Props) {
       .paddingInner(2)
       .round(true);
 
-    treemapLayout(root);
+    const treemapRoot = treemapLayout(root);
 
     const g = svg
       .append("g")
@@ -138,7 +138,7 @@ export function RegionMapD3({ data, date, priceType }: RegionMapD3Props) {
 
     const nodes = g
       .selectAll<SVGGElement, d3.HierarchyRectangularNode<RegionNode>>("g")
-      .data(root.descendants())
+      .data(treemapRoot.descendants())
       .join("g")
       .attr("transform", (d) => `translate(${d.x0},${d.y0})`);
 
