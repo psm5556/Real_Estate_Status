@@ -237,6 +237,11 @@ export const REGION_CODES: Record<string, string> = {
 // 전체 지역명 배열 (정렬용)
 export const REGION_NAMES = Object.keys(REGION_CODES);
 
+// regionCode → fullName 역매핑 (지도 탭 계층 구성용)
+export const CODE_TO_FULL_NAME: Record<string, string> = Object.fromEntries(
+  Object.entries(REGION_CODES).map(([fullName, code]) => [code, fullName])
+);
+
 // 기본 선택 지역
 export const DEFAULT_REGIONS = [
   "서울>강남지역",

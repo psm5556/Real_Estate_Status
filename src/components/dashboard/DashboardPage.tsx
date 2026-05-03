@@ -7,7 +7,8 @@ import { DataTab } from "./DataTab";
 import { FilterPanel } from "@/components/layout/FilterPanel";
 import { usePriceData } from "@/hooks/usePriceData";
 import { useFilterStore } from "@/lib/store/filter-store";
-import { LineChart, Grid3X3, Table2, AlertCircle } from "lucide-react";
+import { LineChart, Grid3X3, Table2, AlertCircle, Map } from "lucide-react";
+import { MapTab } from "./MapTab";
 
 export function DashboardPage() {
   const { data = [], isLoading, isError, error } = usePriceData();
@@ -39,7 +40,7 @@ export function DashboardPage() {
             <p className="text-sm text-muted-foreground/70 max-w-sm">
               256개 지역의 주간 매매·전세 가격지수를 차트와 히트맵으로 분석할 수 있습니다.
             </p>
-            <div className="mt-4 grid grid-cols-3 gap-4 text-xs text-muted-foreground/60">
+            <div className="mt-4 grid grid-cols-4 gap-4 text-xs text-muted-foreground/60">
               <div className="flex flex-col items-center gap-1.5">
                 <LineChart className="h-5 w-5" />
                 <span>가격지수 추이</span>
@@ -51,6 +52,10 @@ export function DashboardPage() {
               <div className="flex flex-col items-center gap-1.5">
                 <Table2 className="h-5 w-5" />
                 <span>원본 데이터</span>
+              </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <Map className="h-5 w-5" />
+                <span>지역별 지도</span>
               </div>
             </div>
           </div>
@@ -72,6 +77,10 @@ export function DashboardPage() {
                 <Table2 className="h-3.5 w-3.5" />
                 데이터
               </TabsTrigger>
+              <TabsTrigger value="map" className="gap-1.5 text-xs sm:text-sm">
+                <Map className="h-3.5 w-3.5" />
+                지도
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="trend" className="mt-0">
@@ -84,6 +93,10 @@ export function DashboardPage() {
 
             <TabsContent value="data" className="mt-0">
               <DataTab data={data} loading={isLoading} />
+            </TabsContent>
+
+            <TabsContent value="map" className="mt-0">
+              <MapTab data={data} loading={isLoading} />
             </TabsContent>
           </Tabs>
         )}
