@@ -46,16 +46,37 @@ export function usePriceData() {
       // 필터에서 사용한 전체 이름(예: "서울>강남지역")으로 덮어씀
       const promises = regions.flatMap((regionName) => {
         const regionCode = REGION_CODES[regionName];
-        if (!regionCode) return [];
+        if (!regionCode) {
+          console.warn(`[usePriceData] REGION_CODES에 없는 지역: "${regionName}"`);
+          return [];
+        }
         return priceTypes.map((pt) =>
           fetchOne(pt, startWeek, endWeek, regionCode)
-            .then((rows) => rows.map((row) => ({ ...row, regionName })))
-            .catch(() => [] as PriceRow[])
+            .then((rows) => {
+              const tagged = rows.map((row) => ({ ...row, regionName }));
+              if (tagged.length === 0) {
+                console.warn(`[usePriceData] 데이터 없음: ${regionName} (${pt}, code=${regionCode})`);
+              }
+              return tagged;
+            })
+            .catch((err) => {
+              console.error(`[usePriceData] API 실패: ${regionName} (${pt}, code=${regionCode})`, err);
+              return [] as PriceRow[];
+            })
         );
       });
 
       const results = await Promise.all(promises);
-      return results.flat();
+      const flat = results.flat();
+
+      // 지역별 row 수 확인 (브라우저 콘솔에서 확인)
+      const countByRegion = new Map<string, number>();
+      for (const row of flat) {
+        countByRegion.set(row.regionName, (countByRegion.get(row.regionName) ?? 0) + 1);
+      }
+      console.log("[usePriceData] 지역별 데이터 수:", Object.fromEntries(countByRegion));
+
+      return flat;
     },
   });
 }

@@ -37,7 +37,8 @@ async function fetchRebData(params: RebApiRequest): Promise<PriceApiResponse> {
     throw new Error(`REB API 오류 코드: ${resultCode} - ${head[1].RESULT.MESSAGE}`);
   }
 
-  const rawRows = json.SttsApiTblData[1].row;
+  const rawRows = json.SttsApiTblData[1]?.row;
+  if (!rawRows) return { data: [] };
   const rows = Array.isArray(rawRows) ? rawRows : [rawRows];
 
   const data: PriceApiResponse["data"] = [];

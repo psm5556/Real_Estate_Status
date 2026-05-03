@@ -1,6 +1,11 @@
 import type { PriceRow, ChartDataPoint, ChartSeries } from "@/types/price-data";
 import type { PriceType } from "@/types/price-data";
 
+// Recharts dataKey는 특수문자(> 등)를 path separator로 오해할 수 있으므로 안전한 키로 변환
+function toDataKey(regionName: string, priceType: string): string {
+  return `${regionName.replace(/>/g, "▶")}__${priceType}`;
+}
+
 // 차트 라인 색상 팔레트
 const COLORS = [
   "#2563eb", // blue-600
@@ -42,7 +47,7 @@ export function buildChartData(
     colorIndex++;
     for (const pt of priceTypes) {
       series.push({
-        key: `${region}__${pt}`,
+        key: toDataKey(region, pt),
         regionName: region,
         priceType: pt,
         color,
@@ -59,7 +64,7 @@ export function buildChartData(
     if (!dateMap.has(row.date)) {
       dateMap.set(row.date, { date: row.date });
     }
-    const key = `${row.regionName}__${row.priceType}`;
+    const key = toDataKey(row.regionName, row.priceType);
     dateMap.get(row.date)![key] = row.value;
   }
 
