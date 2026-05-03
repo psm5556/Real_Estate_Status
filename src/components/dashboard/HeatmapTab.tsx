@@ -39,7 +39,7 @@ export function HeatmapTab({ data, loading }: HeatmapTabProps) {
   const toggleRegion = useCallback((region: string) => {
     setHiddenRegions((prev) => {
       const next = new Set(prev);
-      next.has(region) ? next.delete(region) : next.add(region);
+      if (next.has(region)) { next.delete(region); } else { next.add(region); }
       return next;
     });
   }, []);
