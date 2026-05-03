@@ -90,6 +90,28 @@ export function TrendChart({
     setHiddenKeys(allHidden ? new Set() : new Set(series.map((s) => s.key)));
   }, [allHidden, series]);
 
+  const yDomain = useMemo(() => {
+    const visibleKeys = series.filter((s) => !hiddenKeys.has(s.key)).map((s) => s.key);
+    if (visibleKeys.length === 0) return ["auto", "auto"] as const;
+    let min = Infinity;
+    let max = -Infinity;
+    for (const row of chartData) {
+      for (const key of visibleKeys) {
+        const v = row[key] as number | undefined;
+        if (v !== undefined && isFinite(v)) {
+          if (v < min) min = v;
+          if (v > max) max = v;
+        }
+      }
+    }
+    if (!isFinite(min) || !isFinite(max)) return ["auto", "auto"] as const;
+    const pad = Math.max((max - min) * 0.05, 0.2);
+    return [
+      Math.floor((min - pad) * 10) / 10,
+      Math.ceil((max + pad) * 10) / 10,
+    ] as const;
+  }, [chartData, series, hiddenKeys]);
+
   if (loading) {
     return <Skeleton className="w-full h-[480px] rounded-lg" />;
   }
@@ -125,6 +147,7 @@ export function TrendChart({
             tickFormatter={(v) => v.toFixed(1)}
             className="text-muted-foreground"
             width={55}
+            domain={yDomain}
             label={{
               value: normalize ? "지수 (2022-01-31=100)" : "지수",
               angle: -90,
