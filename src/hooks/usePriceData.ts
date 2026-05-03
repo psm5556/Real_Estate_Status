@@ -42,8 +42,7 @@ export function usePriceData() {
         priceType === "both" ? ["매매", "전세"] : [priceType];
 
       // 병렬 팬아웃: N지역 × M가격유형
-      // API가 반환하는 CLS_NM은 짧은 이름(예: "강남지역")이므로
-      // 필터에서 사용한 전체 이름(예: "서울>강남지역")으로 덮어씀
+      // API의 CLS_NM(단명)을 그대로 사용 — 데이터 탭과 차트가 동일한 regionName을 공유
       const promises = regions.flatMap((regionName) => {
         const regionCode = REGION_CODES[regionName];
         if (!regionCode) {
@@ -53,11 +52,10 @@ export function usePriceData() {
         return priceTypes.map((pt) =>
           fetchOne(pt, startWeek, endWeek, regionCode)
             .then((rows) => {
-              const tagged = rows.map((row) => ({ ...row, regionName }));
-              if (tagged.length === 0) {
+              if (rows.length === 0) {
                 console.warn(`[usePriceData] 데이터 없음: ${regionName} (${pt}, code=${regionCode})`);
               }
-              return tagged;
+              return rows;
             })
             .catch((err) => {
               console.error(`[usePriceData] API 실패: ${regionName} (${pt}, code=${regionCode})`, err);
