@@ -96,7 +96,7 @@ export function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="map" className="mt-0">
-              <MapTab data={data} loading={isLoading} />
+              <MapTab />
             </TabsContent>
           </Tabs>
         )}
