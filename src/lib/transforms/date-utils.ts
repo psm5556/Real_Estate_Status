@@ -60,3 +60,8 @@ export function calculateDateRange(
 export function formatDate(dateStr: string): string {
   return format(parseISO(dateStr), "yyyy-MM-dd");
 }
+
+// datetime → YYYYMM 월 포맷 (전세가율 등 월단위 API용)
+export function dateToMonthFormat(date: Date): string {
+  return format(date, "yyyyMM");
+}

@@ -94,7 +94,7 @@ async function fetchJeonseRateData(params: {
 
   const url = new URL(REB_API_URL);
   url.searchParams.set("STATBL_ID", JEONSE_RATE_STATBL_ID);
-  url.searchParams.set("DTACYCLE_CD", CYCLE_CODE);
+  url.searchParams.set("DTACYCLE_CD", "MM");
   url.searchParams.set("START_WRTTIME", params.startWeek);
   url.searchParams.set("END_WRTTIME", params.endWeek);
   url.searchParams.set("Type", "json");

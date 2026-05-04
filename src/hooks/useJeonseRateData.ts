@@ -3,7 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useFilterStore } from "@/lib/store/filter-store";
 import { REGION_CODES } from "@/lib/data/regions";
-import { calculateDateRange } from "@/lib/transforms/date-utils";
+import { calculateDateRange, dateToMonthFormat } from "@/lib/transforms/date-utils";
 
 export interface JeonseRateRow {
   date: string;
@@ -42,12 +42,14 @@ export function useJeonseRateData() {
     queryFn: async (): Promise<JeonseRateRow[]> => {
       if (!committedParams) return [];
       const { regions, period, customStart, customEnd } = committedParams;
-      const { startWeek, endWeek } = calculateDateRange(period, customStart, customEnd);
+      const { startDate, endDate } = calculateDateRange(period, customStart, customEnd);
+      const startMonth = dateToMonthFormat(startDate);
+      const endMonth = dateToMonthFormat(endDate);
 
       const promises = regions.flatMap((regionName) => {
         const regionCode = REGION_CODES[regionName];
         if (!regionCode) return [];
-        return fetchOne(startWeek, endWeek, regionCode).catch(() => [] as JeonseRateRow[]);
+        return fetchOne(startMonth, endMonth, regionCode).catch(() => [] as JeonseRateRow[]);
       });
 
       const results = await Promise.all(promises);
