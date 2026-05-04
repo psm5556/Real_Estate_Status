@@ -94,7 +94,7 @@ function parseJeonseRateRows(rawRows: RebApiResponse["SttsApiTblData"][1]["row"]
     const date = `${raw.slice(0, 4)}-${raw.slice(4, 6)}`;
     const value = parseFloat(String(row.DTA_VAL));
     if (isNaN(value)) continue;
-    data.push({ date, value, regionCode: String(row.CLS_ID), regionName: row.CLS_NM });
+    data.push({ date, value, regionCode: String(row.CLS_ID), regionName: String(row.CLS_FULLNM ?? row.CLS_NM) });
   }
   return data;
 }

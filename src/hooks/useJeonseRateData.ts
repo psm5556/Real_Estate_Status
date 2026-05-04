@@ -2,13 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useFilterStore } from "@/lib/store/filter-store";
-import { REGION_CODES } from "@/lib/data/regions";
 import { calculateDateRange, dateToMonthFormat } from "@/lib/transforms/date-utils";
 
 export interface JeonseRateRow {
   date: string;
   regionName: string;
-  regionCode: string;
   rate: number;
 }
 
@@ -21,10 +19,9 @@ async function fetchAll(startMonth: string, endMonth: string): Promise<JeonseRat
   if (!res.ok) return [];
   const json = await res.json();
   return (json.data ?? []).map(
-    (r: { date: string; value: number; regionName: string; regionCode: string }) => ({
+    (r: { date: string; value: number; regionName: string }) => ({
       date: r.date,
       regionName: r.regionName,
-      regionCode: r.regionCode,
       rate: r.value,
     })
   );
@@ -46,16 +43,10 @@ export function useJeonseRateData() {
 
       const allRows = await fetchAll(startMonth, endMonth).catch(() => [] as JeonseRateRow[]);
 
-      // CLS_NM은 필터 지역명과 다르므로 CLS_ID(regionCode)로 필터링
-      const codeToName = new Map<string, string>(
-        regions.flatMap((r) => {
-          const code = REGION_CODES[r];
-          return code ? [[code, r]] : [];
-        })
-      );
+      // regionName = CLS_FULLNM (예: "경기>경부1권") → REGION_CODES 키와 일치
+      const regionSet = new Set(regions);
       return allRows
-        .filter((r) => codeToName.has(r.regionCode))
-        .map((r) => ({ ...r, regionName: codeToName.get(r.regionCode) ?? r.regionName }))
+        .filter((r) => regionSet.has(r.regionName))
         .sort((a, b) => a.date.localeCompare(b.date));
     },
   });
