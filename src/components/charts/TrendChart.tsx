@@ -14,7 +14,7 @@ import {
 } from "recharts";
 import { Skeleton } from "@/components/ui/skeleton";
 import { buildChartData } from "@/lib/transforms/chart-series";
-import { normalizeTo100 } from "@/lib/transforms/normalize";
+import { normalizeTo100, DEFAULT_BASE_DATE } from "@/lib/transforms/normalize";
 import { cn } from "@/lib/utils";
 import type { PriceRow } from "@/types/price-data";
 import type { PriceTypeOption } from "@/lib/store/filter-store";
@@ -24,6 +24,7 @@ interface TrendChartProps {
   regions: string[];
   priceType: PriceTypeOption;
   normalize: boolean;
+  baseDate?: string;
   loading?: boolean;
 }
 
@@ -68,12 +69,13 @@ export function TrendChart({
   regions,
   priceType,
   normalize,
+  baseDate = DEFAULT_BASE_DATE,
   loading,
 }: TrendChartProps) {
   const { chartData, series } = useMemo(() => {
-    const displayData = normalize ? normalizeTo100(data) : data;
+    const displayData = normalize ? normalizeTo100(data, baseDate) : data;
     return buildChartData(displayData, regions, priceType);
-  }, [data, regions, priceType, normalize]);
+  }, [data, regions, priceType, normalize, baseDate]);
 
   const [hiddenKeys, setHiddenKeys] = useState<Set<string>>(new Set());
 
@@ -149,7 +151,7 @@ export function TrendChart({
             width={55}
             domain={yDomain}
             label={{
-              value: normalize ? "지수 (2022-01-31=100)" : "지수",
+              value: normalize ? `지수 (${baseDate}=100)` : "지수",
               angle: -90,
               position: "insideLeft",
               offset: 10,

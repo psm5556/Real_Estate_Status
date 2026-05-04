@@ -17,12 +17,14 @@ export function FilterPanel() {
     customEnd,
     priceType,
     normalize,
+    baseDate,
     setSelectedRegions,
     setPeriod,
     setCustomStart,
     setCustomEnd,
     setPriceType,
     setNormalize,
+    setBaseDate,
     commit,
   } = useFilterStore();
 
@@ -74,7 +76,12 @@ export function FilterPanel() {
           <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
             옵션
           </h3>
-          <NormalizeToggle checked={normalize} onChange={setNormalize} />
+          <NormalizeToggle
+            checked={normalize}
+            onChange={setNormalize}
+            baseDate={baseDate}
+            onBaseDateChange={setBaseDate}
+          />
         </section>
       </div>
 

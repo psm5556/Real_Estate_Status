@@ -1,10 +1,10 @@
 import type { PriceRow } from "@/types/price-data";
 import { parseISO } from "date-fns";
 
-const BASE_DATE = "2022-01-31";
+export const DEFAULT_BASE_DATE = "2022-01-31";
 
-export function normalizeTo100(data: PriceRow[]): PriceRow[] {
-  const baseDate = parseISO(BASE_DATE);
+export function normalizeTo100(data: PriceRow[], baseDateStr: string = DEFAULT_BASE_DATE): PriceRow[] {
+  const baseDate = parseISO(baseDateStr);
 
   // 지역 + 가격유형 조합별로 그룹화
   const groups = new Map<string, PriceRow[]>();

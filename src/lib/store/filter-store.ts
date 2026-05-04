@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { DEFAULT_REGIONS } from "@/lib/data/regions";
+import { DEFAULT_BASE_DATE } from "@/lib/transforms/normalize";
 
 export type PeriodOption = "1년" | "3년" | "5년" | "10년" | "직접입력";
 export type PriceTypeOption = "매매" | "전세" | "both";
@@ -12,6 +13,7 @@ interface FilterState {
   customEnd: string;
   priceType: PriceTypeOption;
   normalize: boolean;
+  baseDate: string;
   heatmapMode: HeatmapModeOption;
   // 실제 조회에 사용되는 확정된 파라미터 (조회 버튼 클릭 시 반영)
   committedParams: {
@@ -31,6 +33,7 @@ interface FilterState {
   setCustomEnd: (date: string) => void;
   setPriceType: (priceType: PriceTypeOption) => void;
   setNormalize: (normalize: boolean) => void;
+  setBaseDate: (date: string) => void;
   setHeatmapMode: (mode: HeatmapModeOption) => void;
   commit: () => void;
 }
@@ -42,6 +45,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   customEnd: new Date().toISOString().slice(0, 10),
   priceType: "매매",
   normalize: false,
+  baseDate: DEFAULT_BASE_DATE,
   heatmapMode: "cumulative",
   committedParams: null,
 
@@ -51,6 +55,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   setCustomEnd: (date) => set({ customEnd: date }),
   setPriceType: (priceType) => set({ priceType }),
   setNormalize: (normalize) => set({ normalize }),
+  setBaseDate: (date) => set({ baseDate: date }),
   setHeatmapMode: (mode) => set({ heatmapMode: mode }),
 
   commit: () => {

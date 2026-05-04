@@ -15,6 +15,8 @@ export function TrendTab({ data, loading }: TrendTabProps) {
   const committedParams = useFilterStore((s) => s.committedParams);
   const normalize = useFilterStore((s) => s.normalize);
   const setNormalize = useFilterStore((s) => s.setNormalize);
+  const baseDate = useFilterStore((s) => s.baseDate);
+  const setBaseDate = useFilterStore((s) => s.setBaseDate);
 
   const regions = committedParams?.regions ?? [];
   const priceType = committedParams?.priceType ?? "매매";
@@ -27,7 +29,12 @@ export function TrendTab({ data, loading }: TrendTabProps) {
         <h3 className="text-sm font-medium text-muted-foreground">
           주간 가격지수 추이
         </h3>
-        <NormalizeToggle checked={normalize} onChange={setNormalize} />
+        <NormalizeToggle
+          checked={normalize}
+          onChange={setNormalize}
+          baseDate={baseDate}
+          onBaseDateChange={setBaseDate}
+        />
       </div>
 
       <TrendChart
@@ -35,6 +42,7 @@ export function TrendTab({ data, loading }: TrendTabProps) {
         regions={regions}
         priceType={priceType}
         normalize={normalize}
+        baseDate={baseDate}
         loading={loading}
       />
     </div>
