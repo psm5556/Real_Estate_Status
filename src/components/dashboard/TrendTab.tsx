@@ -2,6 +2,7 @@
 
 import { KpiRow } from "@/components/kpi/KpiRow";
 import { TrendChart } from "@/components/charts/TrendChart";
+import { CumulativeReturnChart } from "@/components/charts/CumulativeReturnChart";
 import { NormalizeToggle } from "@/components/filters/NormalizeToggle";
 import { useFilterStore } from "@/lib/store/filter-store";
 import type { PriceRow } from "@/types/price-data";
@@ -45,6 +46,7 @@ export function TrendTab({ data, loading }: TrendTabProps) {
         baseDate={baseDate}
         loading={loading}
       />
+      {!loading && <CumulativeReturnChart data={data} priceType={priceType} />}
     </div>
   );
 }
