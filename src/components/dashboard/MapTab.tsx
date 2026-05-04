@@ -5,11 +5,30 @@ import { RegionMapKorea, calcWow } from "@/components/charts/RegionMapKorea";
 import { PlaybackControl } from "@/components/charts/PlaybackControl";
 import { useMapData } from "@/hooks/useMapData";
 import { Skeleton } from "@/components/ui/skeleton";
+import type { PriceRow } from "@/types/price-data";
 
 interface RankEntry {
   code: string;
   name: string;
   wow: number;
+}
+
+function rank(
+  wowMap: Map<string, number>,
+  data: PriceRow[]
+): { top10: RankEntry[]; bottom10: RankEntry[] } {
+  const nameByCode = new Map<string, string>();
+  for (const r of data) nameByCode.set(r.regionCode, r.regionName);
+
+  const entries: RankEntry[] = [];
+  for (const [code, wow] of wowMap) {
+    entries.push({ code, name: nameByCode.get(code) ?? code, wow });
+  }
+  entries.sort((a, b) => b.wow - a.wow);
+  return {
+    top10: entries.slice(0, 10),
+    bottom10: entries.slice(-10).reverse(),
+  };
 }
 
 function RankList({
@@ -53,11 +72,20 @@ function RankList({
 export function MapTab() {
   const { data = [], isLoading } = useMapData();
 
+  const maemaeData = useMemo(
+    () => data.filter((r) => r.priceType === "매매"),
+    [data]
+  );
+  const jeonseData = useMemo(
+    () => data.filter((r) => r.priceType === "전세"),
+    [data]
+  );
+
   const dates = useMemo(() => {
     const set = new Set<string>();
-    for (const r of data) set.add(r.date);
+    for (const r of maemaeData) set.add(r.date);
     return Array.from(set).sort();
-  }, [data]);
+  }, [maemaeData]);
 
   const [dateIndex, setDateIndex] = useState(() => Math.max(0, dates.length - 1));
   const safeIndex = Math.min(dateIndex, Math.max(0, dates.length - 1));
@@ -65,56 +93,68 @@ export function MapTab() {
 
   const handleIndexChange = useCallback((i: number) => setDateIndex(i), []);
 
-  const wowMap = useMemo(() => calcWow(data, selectedDate), [data, selectedDate]);
+  const maemaeWow = useMemo(
+    () => calcWow(maemaeData, selectedDate),
+    [maemaeData, selectedDate]
+  );
+  const { top10: maemaeTop10, bottom10: maemaeBottom10 } = useMemo(
+    () => rank(maemaeWow, maemaeData),
+    [maemaeWow, maemaeData]
+  );
 
-  const { top10, bottom10 } = useMemo(() => {
-    // Build name map from data
-    const nameByCode = new Map<string, string>();
-    for (const r of data) nameByCode.set(r.regionCode, r.regionName);
-
-    const entries: RankEntry[] = [];
-    for (const [code, wow] of wowMap) {
-      const name = nameByCode.get(code) ?? code;
-      entries.push({ code, name, wow });
-    }
-    entries.sort((a, b) => b.wow - a.wow);
-    return {
-      top10: entries.slice(0, 10),
-      bottom10: entries.slice(-10).reverse(),
-    };
-  }, [wowMap, data]);
+  const jeonseWow = useMemo(
+    () => calcWow(jeonseData, selectedDate),
+    [jeonseData, selectedDate]
+  );
+  const { top10: jeonseTop10, bottom10: jeonseBottom10 } = useMemo(
+    () => rank(jeonseWow, jeonseData),
+    [jeonseWow, jeonseData]
+  );
 
   if (isLoading) {
     return (
       <div className="flex flex-col gap-3">
+        <Skeleton className="w-full h-[600px] rounded-lg" />
         <Skeleton className="w-full h-[600px] rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      {/* 지도 제목 */}
-      <div className="flex items-center justify-between text-sm font-medium text-muted-foreground">
-        <span>아파트 주간 매매가격지수 전주대비 증감률</span>
-        <span className="font-mono text-xs">{selectedDate}</span>
+    <div className="flex flex-col gap-6">
+      {/* 날짜 + PlaybackControl (매매·전세 공유) */}
+      <div className="flex items-center justify-end">
+        <span className="font-mono text-xs text-muted-foreground">{selectedDate}</span>
       </div>
-
-      {/* 타일맵 */}
-      <RegionMapKorea data={data} date={selectedDate} />
-
-      {/* 재생 컨트롤 */}
       <PlaybackControl
         dates={dates}
         currentIndex={safeIndex}
         onIndexChange={handleIndexChange}
       />
 
-      {/* Top10 / Bottom10 */}
-      <div className="grid grid-cols-2 gap-4 mt-1">
-        <RankList title="상승률 Top 10" items={top10} positive={true} />
-        <RankList title="하락률 Top 10" items={bottom10} positive={false} />
-      </div>
+      {/* 매매 섹션 */}
+      <section className="flex flex-col gap-3">
+        <div className="text-sm font-medium text-muted-foreground">
+          아파트 주간 매매가격지수 전주대비 증감률
+        </div>
+        <RegionMapKorea data={maemaeData} date={selectedDate} />
+        <div className="grid grid-cols-2 gap-4">
+          <RankList title="상승률 Top 10" items={maemaeTop10} positive={true} />
+          <RankList title="하락률 Top 10" items={maemaeBottom10} positive={false} />
+        </div>
+      </section>
+
+      {/* 전세 섹션 */}
+      <section className="flex flex-col gap-3">
+        <div className="text-sm font-medium text-muted-foreground">
+          아파트 주간 전세가격지수 전주대비 증감률
+        </div>
+        <RegionMapKorea data={jeonseData} date={selectedDate} />
+        <div className="grid grid-cols-2 gap-4">
+          <RankList title="상승률 Top 10" items={jeonseTop10} positive={true} />
+          <RankList title="하락률 Top 10" items={jeonseBottom10} positive={false} />
+        </div>
+      </section>
     </div>
   );
 }

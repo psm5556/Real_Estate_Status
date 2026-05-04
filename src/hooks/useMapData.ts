@@ -4,17 +4,18 @@ import { useQuery } from "@tanstack/react-query";
 import { subDays } from "date-fns";
 import { MAP_REGION_CODES } from "@/lib/data/map-layout";
 import { dateToWeekFormat } from "@/lib/transforms/date-utils";
-import type { PriceRow } from "@/types/price-data";
+import type { PriceRow, PriceType } from "@/types/price-data";
 
 async function fetchOne(
   startWeek: string,
   endWeek: string,
-  regionCode: string
+  regionCode: string,
+  priceType: PriceType
 ): Promise<PriceRow[]> {
   const res = await fetch("/api/price-index", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ priceType: "매매", startWeek, endWeek, regionCode }),
+    body: JSON.stringify({ priceType, startWeek, endWeek, regionCode }),
   });
   if (!res.ok) return [];
   const json = await res.json();
@@ -32,8 +33,10 @@ export function useMapData() {
       const endWeek = dateToWeekFormat(today);
 
       const results = await Promise.all(
-        MAP_REGION_CODES.map((code) =>
-          fetchOne(startWeek, endWeek, code).catch(() => [] as PriceRow[])
+        (["매매", "전세"] as PriceType[]).flatMap((priceType) =>
+          MAP_REGION_CODES.map((code) =>
+            fetchOne(startWeek, endWeek, code, priceType).catch(() => [] as PriceRow[])
+          )
         )
       );
       return results.flat();
