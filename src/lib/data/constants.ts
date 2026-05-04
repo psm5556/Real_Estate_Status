@@ -5,6 +5,7 @@ export const STATBL_IDS: Record<PriceType, string> = {
   "전세": "T247713133046872",
 };
 
+export const JEONSE_RATE_STATBL_ID = "A_2024_00072";
 export const CYCLE_CODE = "WK";
 export const BASE_DATE = "2022-01-31";
 export const REB_API_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do";
