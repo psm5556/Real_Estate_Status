@@ -2,7 +2,6 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useFilterStore } from "@/lib/store/filter-store";
-import { REGION_CODES } from "@/lib/data/regions";
 import { calculateDateRange, dateToMonthFormat } from "@/lib/transforms/date-utils";
 
 export interface JeonseRateRow {
@@ -11,15 +10,11 @@ export interface JeonseRateRow {
   rate: number;
 }
 
-async function fetchOne(
-  startWeek: string,
-  endWeek: string,
-  regionCode: string
-): Promise<JeonseRateRow[]> {
+async function fetchAll(startMonth: string, endMonth: string): Promise<JeonseRateRow[]> {
   const res = await fetch("/api/jeonse-rate", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ startWeek, endWeek, regionCode }),
+    body: JSON.stringify({ startMonth, endMonth }),
   });
   if (!res.ok) return [];
   const json = await res.json();
@@ -46,14 +41,12 @@ export function useJeonseRateData() {
       const startMonth = dateToMonthFormat(startDate);
       const endMonth = dateToMonthFormat(endDate);
 
-      const promises = regions.flatMap((regionName) => {
-        const regionCode = REGION_CODES[regionName];
-        if (!regionCode) return [];
-        return fetchOne(startMonth, endMonth, regionCode).catch(() => [] as JeonseRateRow[]);
-      });
+      const allRows = await fetchAll(startMonth, endMonth).catch(() => [] as JeonseRateRow[]);
 
-      const results = await Promise.all(promises);
-      return results.flat().sort((a, b) => a.date.localeCompare(b.date));
+      const regionSet = new Set(regions);
+      return allRows
+        .filter((r) => regionSet.has(r.regionName))
+        .sort((a, b) => a.date.localeCompare(b.date));
     },
   });
 }

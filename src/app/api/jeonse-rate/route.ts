@@ -4,9 +4,9 @@ import { getCachedJeonseRateData } from "@/lib/api/reb-client";
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { startWeek, endWeek, regionCode } = body;
+    const { startMonth, endMonth } = body;
 
-    if (!startWeek || !endWeek || !regionCode) {
+    if (!startMonth || !endMonth) {
       return NextResponse.json(
         { error: "필수 파라미터가 누락되었습니다." },
         { status: 400 }
@@ -14,9 +14,8 @@ export async function POST(req: NextRequest) {
     }
 
     const result = await getCachedJeonseRateData({
-      startWeek: String(startWeek),
-      endWeek: String(endWeek),
-      regionCode: String(regionCode),
+      startMonth: String(startMonth),
+      endMonth: String(endMonth),
     });
 
     return NextResponse.json(result);
