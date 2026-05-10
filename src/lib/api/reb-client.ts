@@ -113,9 +113,8 @@ function parseMonthlyStatRows(
 async function fetchMonthlyStatPage(
   statblId: string,
   startMonth: string,
-  endMonth: string,
-  pIndex: number
-): Promise<{ data: JeonseRateApiRow[]; total: number }> {
+  endMonth: string
+): Promise<JeonseRateApiRow[]> {
   const apiKey = process.env.REB_API_KEY;
 
   const url = new URL(REB_API_URL);
@@ -125,52 +124,29 @@ async function fetchMonthlyStatPage(
   url.searchParams.set("END_WRTTIME", endMonth);
   url.searchParams.set("Type", "json");
   if (apiKey) url.searchParams.set("Key", apiKey);
-  url.searchParams.set("pIndex", String(pIndex));
+  url.searchParams.set("pIndex", "1");
   url.searchParams.set("pSize", "1000");
 
   const res = await fetch(url.toString(), { signal: AbortSignal.timeout(15000) });
   if (!res.ok) throw new Error(`REB API HTTP 오류: ${res.status}`);
 
-  const json = (await res.json()) as RebApiResponse;
-  const head = json.SttsApiTblData[0].head;
-  const total = head[0].list_total_count ?? 0;
+  // 데이터 없는 기간은 {"RESULT":{"CODE":"INFO-200",...}} 최상위 응답 반환 (SttsApiTblData 없음)
+  const json = await res.json();
+  if (!("SttsApiTblData" in json)) return [];
+
+  const typed = json as RebApiResponse;
+  const head = typed.SttsApiTblData[0].head;
   const resultCode = head[1].RESULT.CODE;
-  if (resultCode !== "INFO-000") {
-    throw new Error(`REB API 오류 코드: ${resultCode} - ${head[1].RESULT.MESSAGE}`);
-  }
+  if (resultCode !== "INFO-000") return [];
 
-  const rawRows = json.SttsApiTblData[1]?.row;
-  if (!rawRows) return { data: [], total };
-  return { data: parseMonthlyStatRows(rawRows), total };
+  const rawRows = typed.SttsApiTblData[1]?.row;
+  if (!rawRows) return [];
+  return parseMonthlyStatRows(rawRows);
 }
 
-async function fetchAllMonthlyStat(
-  statblId: string,
-  startMonth: string,
-  endMonth: string
-): Promise<{ data: JeonseRateApiRow[] }> {
-  const allData: JeonseRateApiRow[] = [];
-  let pIndex = 1;
-
-  while (true) {
-    const { data, total } = await fetchMonthlyStatPage(statblId, startMonth, endMonth, pIndex);
-    allData.push(...data);
-    if (allData.length >= total || data.length < 1000) break;
-    pIndex++;
-  }
-
-  allData.sort((a, b) => a.date.localeCompare(b.date));
-  return { data: allData };
-}
-
-export const getCachedJeonseRateData = unstable_cache(
-  async (params: { startMonth: string; endMonth: string }) =>
-    fetchAllMonthlyStat(JEONSE_RATE_STATBL_ID, params.startMonth, params.endMonth),
-  ["reb-jeonse-rate"],
-  { revalidate: CACHE_TTL_SECONDS }
-);
-
-// ─── 전환율 전용: pIndex 무시 API 대응 — 날짜 범위 분할 병렬 fetch ────────────
+// ─── 두 월단위 API 모두 pIndex를 무시 → 날짜 범위 청크 분할 병렬 fetch ────────
+// 전세가율: 230지역/월 → chunkSize=4 (920행 < 1000)
+// 전환율:   175지역/월 → chunkSize=5 (875행 < 1000)
 
 function addMonthsYYYYMM(yyyymm: string, n: number): string {
   const year = parseInt(yyyymm.slice(0, 4));
@@ -194,23 +170,33 @@ async function fetchAllMonthlyStatChunked(
   statblId: string,
   startMonth: string,
   endMonth: string,
-  chunkSize = 5   // 175 regions × 5 months = 875 rows < 1000 limit
+  chunkSize: number
 ): Promise<{ data: JeonseRateApiRow[] }> {
   const chunks = monthChunks(startMonth, endMonth, chunkSize);
-  const results = await Promise.all(
-    chunks.map(([s, e]) => fetchMonthlyStatPage(statblId, s, e, 1))
+  const settled = await Promise.allSettled(
+    chunks.map(([s, e]) => fetchMonthlyStatPage(statblId, s, e))
   );
-  const allData = results.flatMap((r) => r.data);
+  const allData = settled
+    .filter((r): r is PromiseFulfilledResult<JeonseRateApiRow[]> => r.status === "fulfilled")
+    .flatMap((r) => r.value);
   allData.sort((a, b) => a.date.localeCompare(b.date));
   return { data: allData };
 }
+
+export const getCachedJeonseRateData = unstable_cache(
+  async (params: { startMonth: string; endMonth: string }) =>
+    fetchAllMonthlyStatChunked(JEONSE_RATE_STATBL_ID, params.startMonth, params.endMonth, 4),
+  ["reb-jeonse-rate"],
+  { revalidate: CACHE_TTL_SECONDS }
+);
 
 export const getCachedJeonseConversionRateData = unstable_cache(
   async (params: { startMonth: string; endMonth: string }) =>
     fetchAllMonthlyStatChunked(
       JEONSE_CONVERSION_RATE_STATBL_ID,
       params.startMonth,
-      params.endMonth
+      params.endMonth,
+      5
     ),
   ["reb-jeonse-conversion-rate"],
   { revalidate: CACHE_TTL_SECONDS }
