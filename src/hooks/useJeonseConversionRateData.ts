@@ -22,6 +22,16 @@ async function fetchAll(startMonth: string, endMonth: string): Promise<JeonseRat
   );
 }
 
+// 전환율 API는 권역 중간 단계 없이 "부산>기장군" 형태로 반환.
+// REGION_CODES는 "부산>동부산권>기장군"처럼 권역 포함.
+// "권"/"지역"으로 끝나는 세그먼트를 제거해 두 체계를 일치시킨다.
+function simplify(name: string): string {
+  return name
+    .split(">")
+    .filter((s) => !s.endsWith("권") && !s.endsWith("지역"))
+    .join(">");
+}
+
 export function useJeonseConversionRateData() {
   const committedParams = useFilterStore((s) => s.committedParams);
 
@@ -38,9 +48,14 @@ export function useJeonseConversionRateData() {
 
       const allRows = await fetchAll(startMonth, endMonth).catch(() => [] as JeonseRateRow[]);
 
-      const regionSet = new Set(regions);
+      // 권역 제거 후 selected region 풀네임으로 역매핑
+      const simplifiedToFull = new Map<string, string>(
+        regions.map((r) => [simplify(r), r])
+      );
+
       return allRows
-        .filter((r) => regionSet.has(r.regionName))
+        .filter((r) => simplifiedToFull.has(r.regionName))
+        .map((r) => ({ ...r, regionName: simplifiedToFull.get(r.regionName) ?? r.regionName }))
         .sort((a, b) => a.date.localeCompare(b.date));
     },
   });
