@@ -170,9 +170,48 @@ export const getCachedJeonseRateData = unstable_cache(
   { revalidate: CACHE_TTL_SECONDS }
 );
 
+// ─── 전환율 전용: pIndex 무시 API 대응 — 날짜 범위 분할 병렬 fetch ────────────
+
+function addMonthsYYYYMM(yyyymm: string, n: number): string {
+  const year = parseInt(yyyymm.slice(0, 4));
+  const month = parseInt(yyyymm.slice(4, 6)) - 1;
+  const d = new Date(Date.UTC(year, month + n, 1));
+  return `${d.getUTCFullYear()}${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+function monthChunks(start: string, end: string, size: number): [string, string][] {
+  const chunks: [string, string][] = [];
+  let cur = start;
+  while (cur <= end) {
+    const chunkEnd = addMonthsYYYYMM(cur, size - 1);
+    chunks.push([cur, chunkEnd <= end ? chunkEnd : end]);
+    cur = addMonthsYYYYMM(cur, size);
+  }
+  return chunks;
+}
+
+async function fetchAllMonthlyStatChunked(
+  statblId: string,
+  startMonth: string,
+  endMonth: string,
+  chunkSize = 5   // 175 regions × 5 months = 875 rows < 1000 limit
+): Promise<{ data: JeonseRateApiRow[] }> {
+  const chunks = monthChunks(startMonth, endMonth, chunkSize);
+  const results = await Promise.all(
+    chunks.map(([s, e]) => fetchMonthlyStatPage(statblId, s, e, 1))
+  );
+  const allData = results.flatMap((r) => r.data);
+  allData.sort((a, b) => a.date.localeCompare(b.date));
+  return { data: allData };
+}
+
 export const getCachedJeonseConversionRateData = unstable_cache(
   async (params: { startMonth: string; endMonth: string }) =>
-    fetchAllMonthlyStat(JEONSE_CONVERSION_RATE_STATBL_ID, params.startMonth, params.endMonth),
+    fetchAllMonthlyStatChunked(
+      JEONSE_CONVERSION_RATE_STATBL_ID,
+      params.startMonth,
+      params.endMonth
+    ),
   ["reb-jeonse-conversion-rate"],
   { revalidate: CACHE_TTL_SECONDS }
 );
