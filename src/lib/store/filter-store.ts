@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { DEFAULT_REGIONS } from "@/lib/data/regions";
 import { DEFAULT_BASE_DATE } from "@/lib/transforms/normalize";
 
-export type PeriodOption = "1년" | "3년" | "5년" | "10년" | "직접입력";
+export type PeriodOption = "최대" | "1년" | "3년" | "5년" | "10년" | "직접입력";
 export type PriceTypeOption = "매매" | "전세" | "both";
 export type HeatmapModeOption = "cumulative" | "wow";
 
@@ -40,7 +40,7 @@ interface FilterState {
 
 export const useFilterStore = create<FilterState>((set, get) => ({
   selectedRegions: DEFAULT_REGIONS,
-  period: "1년",
+  period: "최대",
   customStart: "2013-08-05",
   customEnd: new Date().toISOString().slice(0, 10),
   priceType: "매매",

@@ -244,8 +244,7 @@ export const CODE_TO_FULL_NAME: Record<string, string> = Object.fromEntries(
 
 // 기본 선택 지역
 export const DEFAULT_REGIONS = [
-  "서울>강남지역",
-  "서울>강북지역",
+  "서울>강남지역>동남권>강남구",
   "경기>경부1권>성남시>분당구",
   "경기>경부1권>과천시",
   "경기>경부2권>수원시>영통구",

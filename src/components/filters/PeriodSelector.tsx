@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { PeriodOption } from "@/lib/store/filter-store";
 
-const PERIODS: PeriodOption[] = ["1년", "3년", "5년", "10년", "직접입력"];
+const PERIODS: PeriodOption[] = ["최대", "1년", "3년", "5년", "10년", "직접입력"];
 
 interface PeriodSelectorProps {
   period: PeriodOption;
@@ -27,7 +27,7 @@ export function PeriodSelector({
 }: PeriodSelectorProps) {
   return (
     <div className="flex flex-col gap-2">
-      <div className="grid grid-cols-5 gap-1">
+      <div className="grid grid-cols-6 gap-1">
         {PERIODS.map((p) => (
           <Button
             key={p}

@@ -25,6 +25,9 @@ export function calculateDateRange(
   const endDate = today;
 
   switch (period) {
+    case "최대":
+      startDate = new Date("2003-01-01");
+      break;
     case "1년":
       startDate = subDays(today, 365);
       break;
