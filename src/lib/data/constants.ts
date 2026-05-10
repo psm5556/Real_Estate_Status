@@ -6,6 +6,7 @@ export const STATBL_IDS: Record<PriceType, string> = {
 };
 
 export const JEONSE_RATE_STATBL_ID = "A_2024_00072";
+export const JEONSE_CONVERSION_RATE_STATBL_ID = "A_2024_00156";
 export const CYCLE_CODE = "WK";
 export const BASE_DATE = "2022-01-31";
 export const REB_API_URL = "https://www.reb.or.kr/r-one/openapi/SttsApiTblData.do";

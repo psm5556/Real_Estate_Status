@@ -9,8 +9,9 @@ import { CorrelationTab } from "./CorrelationTab";
 import { FilterPanel } from "@/components/layout/FilterPanel";
 import { usePriceData } from "@/hooks/usePriceData";
 import { useFilterStore } from "@/lib/store/filter-store";
-import { LineChart, Grid3X3, Table2, AlertCircle, Map, Percent, Layers } from "lucide-react";
+import { LineChart, Grid3X3, Table2, AlertCircle, Map, Percent, Layers, LayoutList } from "lucide-react";
 import { MapTab } from "./MapTab";
+import { MonthlyMetricsTab } from "./MonthlyMetricsTab";
 
 export function DashboardPage() {
   const { data = [], isLoading, isError, error } = usePriceData();
@@ -67,6 +68,10 @@ export function DashboardPage() {
                 <Layers className="h-5 w-5" />
                 <span>지역 상관관계</span>
               </div>
+              <div className="flex flex-col items-center gap-1.5">
+                <LayoutList className="h-5 w-5" />
+                <span>월별 지표</span>
+              </div>
             </div>
           </div>
         )}
@@ -99,6 +104,10 @@ export function DashboardPage() {
                 <Layers className="h-3.5 w-3.5" />
                 상관관계
               </TabsTrigger>
+              <TabsTrigger value="monthly-metrics" className="gap-1.5 text-xs sm:text-sm">
+                <LayoutList className="h-3.5 w-3.5" />
+                월별 지표
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="trend" className="mt-0">
@@ -123,6 +132,10 @@ export function DashboardPage() {
 
             <TabsContent value="correlation" className="mt-0">
               <CorrelationTab data={data} loading={isLoading} />
+            </TabsContent>
+
+            <TabsContent value="monthly-metrics" className="mt-0">
+              <MonthlyMetricsTab data={data} loading={isLoading} />
             </TabsContent>
           </Tabs>
         )}

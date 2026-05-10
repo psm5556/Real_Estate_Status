@@ -1,7 +1,7 @@
 import type { PriceRow } from "@/types/price-data";
 import { parseISO } from "date-fns";
 
-export const DEFAULT_BASE_DATE = "2013-04-16";
+export const DEFAULT_BASE_DATE = "2013-10-21";
 
 export function normalizeTo100(data: PriceRow[], baseDateStr: string = DEFAULT_BASE_DATE): PriceRow[] {
   const baseDate = parseISO(baseDateStr);
