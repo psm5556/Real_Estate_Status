@@ -245,8 +245,8 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
 
       <div className="overflow-auto rounded-lg border">
         <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-muted/50 border-b">
+          <thead className="sticky top-0 z-10">
+            <tr className="bg-muted border-b">
               <th className="text-left p-2 pl-3 font-medium text-muted-foreground">월</th>
               <th className="text-right p-2 font-medium text-muted-foreground">매매지수</th>
               <th className="text-right p-2 font-medium text-muted-foreground">전세지수</th>
