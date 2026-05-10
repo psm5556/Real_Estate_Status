@@ -1,6 +1,17 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
 import { useFilterStore } from "@/lib/store/filter-store";
 import { REGION_CODES } from "@/lib/data/regions";
 import { useJeonseRateData } from "@/hooks/useJeonseRateData";
@@ -16,6 +27,14 @@ interface MonthRow {
   jeonseRate?: number;
   conversionRate?: number;
   mortgageRate?: number;
+}
+
+interface ChartPoint {
+  month: string;
+  maemae: number | null;
+  jeonse: number | null;
+  jeonseRate: number | null;
+  optimalJeonseRate: number | null;
 }
 
 function aggregateToMonthly(rows: PriceRow[], priceType: PriceType): Map<string, number> {
@@ -82,6 +101,19 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
       }));
   }, [data, effectiveRegion, jeonseRateRows, convRateRows, mortgageRateMap]);
 
+  const chartData = useMemo((): ChartPoint[] => {
+    return [...tableData].reverse().map((row) => ({
+      month: row.month,
+      maemae: row.maemae ?? null,
+      jeonse: row.jeonse ?? null,
+      jeonseRate: row.jeonseRate ?? null,
+      optimalJeonseRate:
+        row.mortgageRate !== undefined && row.conversionRate !== undefined && row.conversionRate !== 0
+          ? (row.mortgageRate / row.conversionRate) * 100
+          : null,
+    }));
+  }, [tableData]);
+
   const isLoading = loading || jrLoading || crLoading || mrLoading;
 
   if (isLoading) return <Skeleton className="w-full h-[480px] rounded-lg" />;
@@ -107,6 +139,108 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
+      </div>
+
+      {/* 멀티 차트: 매매·전세지수(라인) + 전세가율·적정전세가율(바) */}
+      <div className="rounded-lg border bg-card p-3">
+        <ResponsiveContainer width="100%" height={280}>
+          <ComposedChart
+            data={chartData}
+            margin={{ top: 4, right: 52, bottom: 0, left: 0 }}
+            barGap={0}
+            barCategoryGap="30%"
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+            <XAxis
+              dataKey="month"
+              tick={{ fontSize: 10 }}
+              tickFormatter={(v: string) => v.slice(2)}
+              minTickGap={32}
+            />
+            <YAxis
+              yAxisId="index"
+              tick={{ fontSize: 10 }}
+              width={46}
+              tickFormatter={(v: number) => v.toFixed(0)}
+              label={{ value: "지수", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 10, fill: "var(--muted-foreground)" } }}
+            />
+            <YAxis
+              yAxisId="rate"
+              orientation="right"
+              tick={{ fontSize: 10 }}
+              width={46}
+              tickFormatter={(v: number) => `${v.toFixed(0)}%`}
+              label={{ value: "%", angle: 90, position: "insideRight", offset: 10, style: { fontSize: 10, fill: "var(--muted-foreground)" } }}
+            />
+            <Tooltip
+              contentStyle={{ fontSize: 11 }}
+              formatter={(value: unknown, name: unknown) => {
+                const label = String(name ?? "");
+                if (typeof value !== "number") return ["-", label];
+                if (label === "매매지수" || label === "전세지수") return [value.toFixed(1), label];
+                return [`${value.toFixed(1)}%`, label];
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 11, paddingTop: 4 }} />
+
+            {/* 전세가율 — 기준 바 (먼저 렌더링) */}
+            <Bar
+              yAxisId="rate"
+              dataKey="jeonseRate"
+              name="전세가율"
+              fill="#8b5cf6"
+              fillOpacity={0.55}
+              radius={[2, 2, 0, 0]}
+            />
+            {/* 적정 전세가율 — 같은 x 위치에 오버랩 */}
+            <Bar
+              yAxisId="rate"
+              dataKey="optimalJeonseRate"
+              name="적정 전세가율"
+              fill="#f59e0b"
+              fillOpacity={0.55}
+              radius={[2, 2, 0, 0]}
+              shape={(props: any) => {
+                const { x, y, width, height } = props;
+                if (!height || height <= 0) return <g />;
+                return (
+                  <rect
+                    x={x - width}
+                    y={y}
+                    width={width}
+                    height={height}
+                    fill="#f59e0b"
+                    fillOpacity={0.55}
+                    rx={2}
+                    ry={2}
+                  />
+                );
+              }}
+            />
+
+            {/* 라인 차트 (바 위에 렌더링) */}
+            <Line
+              yAxisId="index"
+              type="monotone"
+              dataKey="maemae"
+              name="매매지수"
+              stroke="#2563eb"
+              strokeWidth={2}
+              dot={false}
+              connectNulls
+            />
+            <Line
+              yAxisId="index"
+              type="monotone"
+              dataKey="jeonse"
+              name="전세지수"
+              stroke="#16a34a"
+              strokeWidth={2}
+              dot={false}
+              connectNulls
+            />
+          </ComposedChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="overflow-auto rounded-lg border">
