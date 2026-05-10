@@ -149,6 +149,18 @@ export function MonthlyMetricsTab() {
     }));
   }, [tableData]);
 
+  const indexYDomain = useMemo(() => {
+    let min = Infinity;
+    let max = -Infinity;
+    for (const row of chartData) {
+      if (row.maemae !== null && isFinite(row.maemae)) { if (row.maemae < min) min = row.maemae; if (row.maemae > max) max = row.maemae; }
+      if (row.jeonse !== null && isFinite(row.jeonse)) { if (row.jeonse < min) min = row.jeonse; if (row.jeonse > max) max = row.jeonse; }
+    }
+    if (!isFinite(min) || !isFinite(max)) return ["auto", "auto"] as const;
+    const pad = Math.max((max - min) * 0.05, 0.5);
+    return [Math.floor((min - pad) * 10) / 10, Math.ceil((max + pad) * 10) / 10] as const;
+  }, [chartData]);
+
   const isLoading = priceLoading || jrLoading || crLoading || mrLoading;
 
   if (isLoading) return <Skeleton className="w-full h-[480px] rounded-lg" />;
@@ -197,6 +209,7 @@ export function MonthlyMetricsTab() {
               tick={{ fontSize: 10 }}
               width={46}
               tickFormatter={(v: number) => v.toFixed(0)}
+              domain={indexYDomain}
               label={{ value: "지수", angle: -90, position: "insideLeft", offset: 10, style: { fontSize: 10, fill: "var(--muted-foreground)" } }}
             />
             <YAxis

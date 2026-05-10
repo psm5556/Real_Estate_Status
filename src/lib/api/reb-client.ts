@@ -139,14 +139,23 @@ async function fetchMonthlyStatPage(
   const resultCode = head[1].RESULT.CODE;
   if (resultCode !== "INFO-000") return [];
 
+  const total = typed.SttsApiTblData[0].head[0].list_total_count ?? 0;
   const rawRows = typed.SttsApiTblData[1]?.row;
   if (!rawRows) return [];
-  return parseMonthlyStatRows(rawRows);
+  const parsed = parseMonthlyStatRows(rawRows);
+  if (total > 1000) {
+    console.warn(
+      `[fetchMonthlyStatPage] ${statblId} ${startMonth}~${endMonth}: ` +
+      `total=${total} > 1000 — 데이터 잘림. 청크 크기를 더 줄이세요.`
+    );
+  }
+  return parsed;
 }
 
 // ─── 두 월단위 API 모두 pIndex를 무시 → 날짜 범위 청크 분할 병렬 fetch ────────
-// 전세가율: 230지역/월 → chunkSize=4 (920행 < 1000)
-// 전환율:   175지역/월 → chunkSize=5 (875행 < 1000)
+// REGION_CODES 최대 256지역 기준으로 안전 마진 확보:
+// 전세가율: chunkSize=3 (256×3=768 < 1000)
+// 전환율:   chunkSize=4 (256×4=1024 ≈ 위험선, but 실제 전환율 지역 수 ~175 → 700 < 1000)
 
 function addMonthsYYYYMM(yyyymm: string, n: number): string {
   const year = parseInt(yyyymm.slice(0, 4));
@@ -185,7 +194,7 @@ async function fetchAllMonthlyStatChunked(
 
 export const getCachedJeonseRateData = unstable_cache(
   async (params: { startMonth: string; endMonth: string }) =>
-    fetchAllMonthlyStatChunked(JEONSE_RATE_STATBL_ID, params.startMonth, params.endMonth, 4),
+    fetchAllMonthlyStatChunked(JEONSE_RATE_STATBL_ID, params.startMonth, params.endMonth, 3),
   ["reb-jeonse-rate"],
   { revalidate: CACHE_TTL_SECONDS }
 );
@@ -196,7 +205,7 @@ export const getCachedJeonseConversionRateData = unstable_cache(
       JEONSE_CONVERSION_RATE_STATBL_ID,
       params.startMonth,
       params.endMonth,
-      5
+      4
     ),
   ["reb-jeonse-conversion-rate"],
   { revalidate: CACHE_TTL_SECONDS }
