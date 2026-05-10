@@ -43,7 +43,7 @@ export const useFilterStore = create<FilterState>((set, get) => ({
   period: "최대",
   customStart: "2013-08-05",
   customEnd: new Date().toISOString().slice(0, 10),
-  priceType: "매매",
+  priceType: "both",
   normalize: false,
   baseDate: DEFAULT_BASE_DATE,
   heatmapMode: "cumulative",

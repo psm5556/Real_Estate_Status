@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   ComposedChart,
   Bar,
@@ -14,11 +15,28 @@ import {
 } from "recharts";
 import { useFilterStore } from "@/lib/store/filter-store";
 import { REGION_CODES } from "@/lib/data/regions";
+import { calculateDateRange } from "@/lib/transforms/date-utils";
 import { useJeonseRateData } from "@/hooks/useJeonseRateData";
 import { useJeonseConversionRateData } from "@/hooks/useJeonseConversionRateData";
 import { useInterestRateData } from "@/hooks/useInterestRateData";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PriceRow, PriceType } from "@/types/price-data";
+
+async function fetchPriceRows(
+  priceType: PriceType,
+  startWeek: string,
+  endWeek: string,
+  regionCode: string
+): Promise<PriceRow[]> {
+  const res = await fetch("/api/price-index", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ priceType, startWeek, endWeek, regionCode }),
+  });
+  if (!res.ok) return [];
+  const json = await res.json();
+  return json.data ?? [];
+}
 
 interface MonthRow {
   month: string;
@@ -50,12 +68,29 @@ function aggregateToMonthly(rows: PriceRow[], priceType: PriceType): Map<string,
   return new Map([...monthMap].map(([k, v]) => [k, v.value]));
 }
 
-export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading: boolean }) {
+export function MonthlyMetricsTab() {
   const committedParams = useFilterStore((s) => s.committedParams);
   const regions = committedParams?.regions ?? [];
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const effectiveRegion = regions.includes(selectedRegion) ? selectedRegion : (regions[0] ?? "");
+
+  const { data: internalPriceData = [], isLoading: priceLoading } = useQuery({
+    queryKey: ["monthlyMetricsPrice", committedParams?.period, committedParams?.customStart, committedParams?.customEnd, effectiveRegion],
+    enabled: !!committedParams && !!effectiveRegion,
+    staleTime: 60 * 60 * 1000,
+    queryFn: async (): Promise<PriceRow[]> => {
+      if (!committedParams || !effectiveRegion) return [];
+      const regionCode = REGION_CODES[effectiveRegion];
+      if (!regionCode) return [];
+      const { startWeek, endWeek } = calculateDateRange(committedParams.period, committedParams.customStart, committedParams.customEnd);
+      const [maemaeRows, jeonseRows] = await Promise.all([
+        fetchPriceRows("매매", startWeek, endWeek, regionCode).catch(() => [] as PriceRow[]),
+        fetchPriceRows("전세", startWeek, endWeek, regionCode).catch(() => [] as PriceRow[]),
+      ]);
+      return [...maemaeRows, ...jeonseRows];
+    },
+  });
 
   const { data: jeonseRateRows = [], isLoading: jrLoading } = useJeonseRateData();
   const { data: convRateRows = [], isLoading: crLoading } = useJeonseConversionRateData();
@@ -66,7 +101,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
     const regionCode = REGION_CODES[effectiveRegion];
     if (!regionCode) return [];
 
-    const regionPriceData = data.filter((r) => r.regionCode === regionCode);
+    const regionPriceData = internalPriceData.filter((r) => r.regionCode === regionCode);
     const maemaeMap = aggregateToMonthly(regionPriceData, "매매");
     const jeonseMap = aggregateToMonthly(regionPriceData, "전세");
 
@@ -99,7 +134,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
         conversionRate: convRateMap.get(month),
         mortgageRate: mortgageRateMap.get(month),
       }));
-  }, [data, effectiveRegion, jeonseRateRows, convRateRows, mortgageRateMap]);
+  }, [internalPriceData, effectiveRegion, jeonseRateRows, convRateRows, mortgageRateMap]);
 
   const chartData = useMemo((): ChartPoint[] => {
     return [...tableData].reverse().map((row) => ({
@@ -114,7 +149,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
     }));
   }, [tableData]);
 
-  const isLoading = loading || jrLoading || crLoading || mrLoading;
+  const isLoading = priceLoading || jrLoading || crLoading || mrLoading;
 
   if (isLoading) return <Skeleton className="w-full h-[480px] rounded-lg" />;
 

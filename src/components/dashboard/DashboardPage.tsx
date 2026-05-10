@@ -135,7 +135,7 @@ export function DashboardPage() {
             </TabsContent>
 
             <TabsContent value="monthly-metrics" className="mt-0">
-              <MonthlyMetricsTab data={data} loading={isLoading} />
+              <MonthlyMetricsTab />
             </TabsContent>
           </Tabs>
         )}
