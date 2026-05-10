@@ -5,6 +5,7 @@ import { useFilterStore } from "@/lib/store/filter-store";
 import { REGION_CODES } from "@/lib/data/regions";
 import { useJeonseRateData } from "@/hooks/useJeonseRateData";
 import { useJeonseConversionRateData } from "@/hooks/useJeonseConversionRateData";
+import { useInterestRateData } from "@/hooks/useInterestRateData";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PriceRow, PriceType } from "@/types/price-data";
 
@@ -14,6 +15,7 @@ interface MonthRow {
   jeonse?: number;
   jeonseRate?: number;
   conversionRate?: number;
+  mortgageRate?: number;
 }
 
 function aggregateToMonthly(rows: PriceRow[], priceType: PriceType): Map<string, number> {
@@ -38,6 +40,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
 
   const { data: jeonseRateRows = [], isLoading: jrLoading } = useJeonseRateData();
   const { data: convRateRows = [], isLoading: crLoading } = useJeonseConversionRateData();
+  const { data: mortgageRateMap = new Map(), isLoading: mrLoading } = useInterestRateData();
 
   const tableData = useMemo((): MonthRow[] => {
     if (!effectiveRegion) return [];
@@ -63,6 +66,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
       ...jeonseMap.keys(),
       ...jeonseRateMap.keys(),
       ...convRateMap.keys(),
+      ...mortgageRateMap.keys(),
     ]);
 
     return [...allMonths]
@@ -74,10 +78,11 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
         jeonse: jeonseMap.get(month),
         jeonseRate: jeonseRateMap.get(month),
         conversionRate: convRateMap.get(month),
+        mortgageRate: mortgageRateMap.get(month),
       }));
-  }, [data, effectiveRegion, jeonseRateRows, convRateRows]);
+  }, [data, effectiveRegion, jeonseRateRows, convRateRows, mortgageRateMap]);
 
-  const isLoading = loading || jrLoading || crLoading;
+  const isLoading = loading || jrLoading || crLoading || mrLoading;
 
   if (isLoading) return <Skeleton className="w-full h-[480px] rounded-lg" />;
 
@@ -113,13 +118,14 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
               <th className="text-right p-2 font-medium text-muted-foreground">전세지수</th>
               <th className="text-right p-2 font-medium text-muted-foreground">전세가율(%)</th>
               <th className="text-right p-2 font-medium text-muted-foreground">전환율(%)</th>
-              <th className="text-right p-2 pr-3 font-medium text-muted-foreground">가율×전환율</th>
+              <th className="text-right p-2 font-medium text-muted-foreground">가율×전환율</th>
+              <th className="text-right p-2 pr-3 font-medium text-muted-foreground">금리(%)</th>
             </tr>
           </thead>
           <tbody>
             {tableData.length === 0 ? (
               <tr>
-                <td colSpan={6} className="p-4 text-center text-muted-foreground text-sm">
+                <td colSpan={7} className="p-4 text-center text-muted-foreground text-sm">
                   해당 지역의 데이터가 없습니다
                 </td>
               </tr>
@@ -138,7 +144,8 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
                     <td className="text-right p-2">{row.jeonse?.toFixed(1) ?? "-"}</td>
                     <td className="text-right p-2">{row.jeonseRate?.toFixed(2) ?? "-"}</td>
                     <td className="text-right p-2">{row.conversionRate?.toFixed(2) ?? "-"}</td>
-                    <td className="text-right p-2 pr-3">{combined?.toFixed(2) ?? "-"}</td>
+                    <td className="text-right p-2">{combined?.toFixed(2) ?? "-"}</td>
+                    <td className="text-right p-2 pr-3">{row.mortgageRate?.toFixed(2) ?? "-"}</td>
                   </tr>
                 );
               })
