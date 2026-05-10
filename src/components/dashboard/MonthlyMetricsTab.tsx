@@ -119,13 +119,16 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
               <th className="text-right p-2 font-medium text-muted-foreground">전세가율(%)</th>
               <th className="text-right p-2 font-medium text-muted-foreground">전환율(%)</th>
               <th className="text-right p-2 font-medium text-muted-foreground">가율×전환율</th>
-              <th className="text-right p-2 pr-3 font-medium text-muted-foreground">금리(%)</th>
+              <th className="text-right p-2 font-medium text-muted-foreground">금리(%)</th>
+              <th className="text-center p-2 font-medium text-muted-foreground">점유 우위</th>
+              <th className="text-right p-2 font-medium text-muted-foreground">적정 전세가율(%)</th>
+              <th className="text-right p-2 pr-3 font-medium text-muted-foreground">하락가능률</th>
             </tr>
           </thead>
           <tbody>
             {tableData.length === 0 ? (
               <tr>
-                <td colSpan={7} className="p-4 text-center text-muted-foreground text-sm">
+                <td colSpan={10} className="p-4 text-center text-muted-foreground text-sm">
                   해당 지역의 데이터가 없습니다
                 </td>
               </tr>
@@ -135,6 +138,29 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
                   row.jeonseRate !== undefined && row.conversionRate !== undefined
                     ? (row.jeonseRate * row.conversionRate) / 100
                     : undefined;
+
+                const occupancy = (() => {
+                  if (combined === undefined || row.mortgageRate === undefined || row.conversionRate === undefined) return undefined;
+                  if (row.mortgageRate <= combined) return "자가";
+                  if (row.mortgageRate >= row.conversionRate) return "월세";
+                  return "전세";
+                })();
+
+                const optimalJeonseRate =
+                  row.mortgageRate !== undefined && row.conversionRate !== undefined && row.conversionRate !== 0
+                    ? (row.mortgageRate / row.conversionRate) * 100
+                    : undefined;
+
+                const declineRate =
+                  row.jeonseRate !== undefined && row.conversionRate !== undefined && row.conversionRate !== 0
+                    ? (1 - row.jeonseRate / 100) / (row.conversionRate / 100)
+                    : undefined;
+
+                const occupancyColor =
+                  occupancy === "자가" ? "text-blue-600 font-medium" :
+                  occupancy === "월세" ? "text-rose-600 font-medium" :
+                  "text-amber-600 font-medium";
+
                 return (
                   <tr key={row.month} className="border-b hover:bg-muted/30">
                     <td className="text-left p-2 pl-3 font-mono text-xs text-muted-foreground">
@@ -145,7 +171,12 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
                     <td className="text-right p-2">{row.jeonseRate?.toFixed(2) ?? "-"}</td>
                     <td className="text-right p-2">{row.conversionRate?.toFixed(2) ?? "-"}</td>
                     <td className="text-right p-2">{combined?.toFixed(2) ?? "-"}</td>
-                    <td className="text-right p-2 pr-3">{row.mortgageRate?.toFixed(2) ?? "-"}</td>
+                    <td className="text-right p-2">{row.mortgageRate?.toFixed(2) ?? "-"}</td>
+                    <td className={`text-center p-2 ${occupancy ? occupancyColor : ""}`}>
+                      {occupancy ?? "-"}
+                    </td>
+                    <td className="text-right p-2">{optimalJeonseRate?.toFixed(1) ?? "-"}</td>
+                    <td className="text-right p-2 pr-3">{declineRate?.toFixed(1) ?? "-"}</td>
                   </tr>
                 );
               })
