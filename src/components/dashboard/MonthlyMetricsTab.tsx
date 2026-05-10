@@ -200,7 +200,7 @@ export function MonthlyMetricsTab({ data, loading }: { data: PriceRow[]; loading
               fill="#f59e0b"
               fillOpacity={0.55}
               radius={[2, 2, 0, 0]}
-              shape={(props: any) => {
+              shape={(props: { x: number; y: number; width: number; height: number }) => {
                 const { x, y, width, height } = props;
                 if (!height || height <= 0) return <g />;
                 return (
